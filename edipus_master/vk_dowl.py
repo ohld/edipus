@@ -73,21 +73,21 @@ def get_auth_params():
 
 
 def get_imgs_metadata(access_token, user_id):
-    url = ("https://api.vkontakte.ru/method/photos.getProfile.json?"
+    url = ("https://api.vk.com/method/photos.getProfile.json?"
         "uid={uid}&access_token={atoken}".format(uid=user_id, atoken=access_token))
     imgs_get_page = urllib2.urlopen(url).read()
     return json.loads(imgs_get_page)['response']
 
 
 def get_me(access_token, user_id):
-    url = ("https://api.vkontakte.ru/method/users.get.json?"
+    url = ("https://api.vk.com/method/users.get.json?"
            "uids={uids}&access_token={atoken}".format(uids=user_id, atoken=access_token))
     info = urllib2.urlopen(url).read()
     return json.loads(info)['response']
 
 
 def get_my_friends_list(access_token, user_id):
-    url = ("https://api.vkontakte.ru/method/friends.get.json?"
+    url = ("https://api.vk.com/method/friends.get.json?"
         "uid={uid}&access_token={atoken}".format(uid=user_id, atoken=access_token))
     friends_get_page = urllib2.urlopen(url).read()
     return json.loads(friends_get_page)['response']
@@ -214,7 +214,7 @@ class Calculate_thread(QtCore.QThread):
         for file1 in file_list1:
             img1 = cv.imread(os.path.join(os.path.join(fileDir, IMG_FOLDER_NOTME), file1))
             if img1 is not None:
-                bb = align.getLargestFaceBoundingBox(img1)
+                bb = align.getLargestFaceBoundingBox(img1, skipMulti=True)
                 if bb is not None:
                     landmarks1 = align.findLandmarks(img1, bb)
                     self.image = face_aligned(img1, bb, self.aligned_size, landmarks = landmarks1, landmarks_i = openface.AlignDlib.OUTER_EYES_AND_NOSE)
@@ -231,7 +231,7 @@ class Calculate_thread(QtCore.QThread):
         for file2 in file_list2:
             img2 = cv.imread(os.path.join(os.path.join(fileDir, IMG_FOLDER_ME), file2))
             if img2 is not None:
-                bb = align.getLargestFaceBoundingBox(img2)
+                bb = align.getLargestFaceBoundingBox(img2, skipMulti=True)
                 if bb is not None:
                     landmarks2 = align.findLandmarks(img2, bb)
                     self.image = face_aligned(img2, bb, self.aligned_size, landmarks = landmarks2, landmarks_i = openface.AlignDlib.OUTER_EYES_AND_NOSE)
@@ -369,6 +369,7 @@ def face_aligned(img, bb, size, landmarks, landmarks_i = openface.AlignDlib.OUTE
 
 
 if __name__ == '__main__':
+
 
     app = QtGui.QApplication(sys.argv)
     window = GuiWindow()

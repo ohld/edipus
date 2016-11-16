@@ -1,22 +1,22 @@
-import webbrowser
-import pickle
-import json
 import urllib2
 import os
-import urlparse
 import openface
 import cv2 as cv
 import sys
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression as LR
 import numpy as np
-from datetime import datetime, timedelta
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtGui import QImage, QPixmap, QFileDialog
 import random
 import shutil
+import vk_requests
+import face
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
+
+IMG_FOLDER_ME = 'me'
+IMG_FOLDER_NOTME = 'notme'
 
 modelDir = os.path.join(fileDir, 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
@@ -26,119 +26,6 @@ networkModel = os.path.join(openfaceModelDir, 'nn4.small2.v1.t7')
 net = openface.TorchNeuralNet(networkModel)
 
 PROBABILITY_THRESHOLD = 0.8
-
-APP_ID = '5712831'
-IMG_FOLDER_ME = 'me'
-IMG_FOLDER_NOTME = 'notme'
-# file, where auth data is saved
-AUTH_FILE = '.auth_data'
-
-
-def get_saved_auth_params():
-    access_token = None
-    user_id = None
-    try:
-        with open(AUTH_FILE, 'rb') as pkl_file:
-            token = pickle.load(pkl_file)
-            expires = pickle.load(pkl_file)
-            uid = pickle.load(pkl_file)
-        if datetime.now() < expires:
-            access_token = token
-            user_id = uid
-    except IOError:
-        pass
-    return access_token, user_id
-
-
-def save_auth_params(access_token, expires_in, user_id):
-    expires = datetime.now() + timedelta(seconds=int(expires_in))
-    with open(AUTH_FILE, 'wb') as output:
-        pickle.dump(access_token, output)
-        pickle.dump(expires, output)
-        pickle.dump(user_id, output)
-
-
-def get_auth_params():
-    auth_url = ("https://oauth.vk.com/authorize?client_id={app_id}"
-        "&scope=photos&redirect_uri=http://oauth.vk.com/blank.html"
-        "&display=page&response_type=token".format(app_id=APP_ID))
-    webbrowser.open_new_tab(auth_url)
-    redirected_url = raw_input("Paste here url you were redirected:\n")
-    aup = urlparse.parse_qs(redirected_url)
-    aup['access_token'] = aup.pop(
-        'https://oauth.vk.com/blank.html#access_token')
-    save_auth_params(aup['access_token'][0], aup['expires_in'][0],
-        aup['user_id'][0])
-    return aup['access_token'][0], aup['user_id'][0]
-
-
-def get_imgs_metadata(access_token, user_id):
-    url = ("https://api.vk.com/method/photos.getProfile.json?"
-        "uid={uid}&access_token={atoken}".format(uid=user_id, atoken=access_token))
-    imgs_get_page = urllib2.urlopen(url).read()
-    return json.loads(imgs_get_page)['response']
-
-
-def get_me(access_token, user_id):
-    url = ("https://api.vk.com/method/users.get.json?"
-           "uids={uids}&access_token={atoken}".format(uids=user_id, atoken=access_token))
-    info = urllib2.urlopen(url).read()
-    return json.loads(info)['response']
-
-
-def get_my_friends_list(access_token, user_id):
-    url = ("https://api.vk.com/method/friends.get.json?"
-        "uid={uid}&access_token={atoken}".format(uid=user_id, atoken=access_token))
-    friends_get_page = urllib2.urlopen(url).read()
-    return json.loads(friends_get_page)['response']
-
-
-def get_photos_urls(photos_list):
-    result = []
-    new_photos_list = take_n_first(photos_list, 8)
-    for photo in new_photos_list:
-        #Choose photo with largest resolution
-        if "src_xxbig" in photo:
-            url = photo["src_xxbig"]
-        elif "src_xbig" in photo:
-            url = photo["src_xbig"]
-        else:
-            url = photo["src_big"]
-        result.append(url)
-    return result
-
-
-def take_n_first(list_l, n):
-    i = 0
-    out_list = []
-    while ((i < n) and (i < len(list_l))):
-        out_list.append(list_l[i])
-        i+=1
-    return out_list
-
-
-class Face:
-    def __init__(self, cv_img, identity):
-        self.cv_img = cv_img
-        self.identity = identity
-
-def checking_one_face(Faces):
-    if (Faces is not None):
-        l = Faces[0].identity
-        for f in Faces:
-            if (f.identity is not l):
-                return False
-        return True
-def counting_faces(Faces):
-    if (Faces is not None):
-        owner = 0
-        others = 0
-        for f in Faces:
-            if (f.identity is 1):
-                owner += 1
-            if (f.identity is 0):
-                others += 1
-        return (owner, others)
 
 def cvimage2qimage(img):
     height, width, bytesPerComponent = img.shape
@@ -166,7 +53,12 @@ class Calculate_thread(QtCore.QThread):
         self.Faces = []
         self.lr = None
         self.aligned_size = 96
-        self.first_flag = False
+
+        #flags
+        self.first_flag   = False
+        self.logging_next = False
+        self.end_learning = False
+
         self.learning = 0  # 0 - not learning
                            # 1 - video learning
                            # 2 - photo learning
@@ -177,10 +69,8 @@ class Calculate_thread(QtCore.QThread):
         self.iters = 12
         self.name = ""
         self.my_name = "Owner"
-        self.end_learning = False
         self.image = None
-        self.logging_next = False
-        self.connect(self.caller.pushButton, QtCore.SIGNAL("clicked()"), self.start_learning)
+        self.connect(self.caller.pushButton,               QtCore.SIGNAL("clicked()"), self.start_learning)
         self.connect(self.caller.loggingwidget.pushButton, QtCore.SIGNAL("clicked()"), self.logg_next)
 
     def logg_next(self):
@@ -210,9 +100,9 @@ class Calculate_thread(QtCore.QThread):
             open(filename, "w").write(urllib2.urlopen(url).read())
 
     def vk_learning(self):
-        access_token, user_id = get_saved_auth_params()
+        access_token, user_id = vk_requests.get_saved_auth_params()
         if not access_token or not user_id:
-            access_token, user_id = get_auth_params()
+            access_token, user_id = vk_requests.get_auth_params()
 
         if os.path.exists(IMG_FOLDER_NOTME):
             shutil.rmtree(IMG_FOLDER_NOTME)
@@ -228,24 +118,24 @@ class Calculate_thread(QtCore.QThread):
 
         i = 0
         new_user_id = self.caller.loggingwidget.lineEdit.text()
-        dictionary = get_me(access_token, new_user_id)
+        dictionary = vk_requests.get_me(access_token, new_user_id)
         d = dictionary[0]
         self.my_name = d["first_name"] + " " + d["last_name"]
         new_user_id = int(d["uid"])
 
-        friends = get_my_friends_list(access_token, new_user_id)
+        friends = vk_requests.get_my_friends_list(access_token, new_user_id)
         j = random.randrange(1000, 10001, 1) % (len(friends) - num_friends)
         while i < num_friends:
             self.emit(QtCore.SIGNAL("loading"), True, (i * 100 / num_friends), "loading friends...")
-            f_img = get_imgs_metadata(access_token, friends[j % len(friends)])
-            f_urls = get_photos_urls(f_img)
+            f_img = vk_requests.get_imgs_metadata(access_token, friends[j % len(friends)])
+            f_urls = vk_requests.get_photos_urls(f_img)
             self.save_photos(f_urls, IMG_FOLDER_NOTME)
             i += 1
             j += 34
         self.emit(QtCore.SIGNAL("loading"), False)
         self.emit(QtCore.SIGNAL("loading"), True, 0, "loading me...")
-        imgs = get_imgs_metadata(access_token, new_user_id)
-        urls = get_photos_urls(imgs)
+        imgs = vk_requests.get_imgs_metadata(access_token, new_user_id)
+        urls = vk_requests.get_photos_urls(imgs)
         self.save_photos(urls, IMG_FOLDER_ME)
         self.emit(QtCore.SIGNAL("finishloading"))
 
@@ -262,7 +152,7 @@ class Calculate_thread(QtCore.QThread):
                     self.image = face_aligned(img1, bb, self.aligned_size, landmarks=landmarks1,
                                               landmarks_i=openface.AlignDlib.OUTER_EYES_AND_NOSE)
                     if self.image is not None:
-                        fc = Face(self.image, 0)
+                        fc = face.Face(self.image, 0)
                         self.Faces.append(fc)
                         self.others += 1
                         self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
@@ -288,7 +178,7 @@ class Calculate_thread(QtCore.QThread):
                     self.image = face_aligned(img2, bb, self.aligned_size, landmarks=landmarks2,
                                               landmarks_i=openface.AlignDlib.OUTER_EYES_AND_NOSE)
                     if self.image is not None:
-                        fc = Face(self.image, 1)
+                        fc = face.Face(self.image, 1)
                         self.owner += 1
                         self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
                         self.Faces.append(fc)
@@ -311,7 +201,7 @@ class Calculate_thread(QtCore.QThread):
         while True:
             if (self.end_learning is True):
                 if (self.first_flag is True):
-                    if (checking_one_face(self.Faces) == False):
+                    if (face.checking_one_face(self.Faces) == False):
                         self.lr = trainLR(self.Faces)
                 else:
                     self.first_flag = True
@@ -353,11 +243,11 @@ class Calculate_thread(QtCore.QThread):
                 if(i < self.iters):
                     if self.image is not None:
                         if(self.caller.comboBox.currentText() == "Owner"):
-                            fc = Face(self.image, 1)
+                            fc = face.Face(self.image, 1)
                             self.owner += 1
                             self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
                         if(self.caller.comboBox.currentText() == "Others"):
-                            fc = Face(self.image, 0)
+                            fc = face.Face(self.image, 0)
                             self.others += 1
                             self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
                         self.Faces.append(fc)
@@ -382,11 +272,11 @@ class Calculate_thread(QtCore.QThread):
                                 self.image = face_aligned(img_l, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=openface.AlignDlib.OUTER_EYES_AND_NOSE)
                                 if self.image is not None:
                                     if (self.caller.comboBox.currentText() == "Owner"):
-                                        fc = Face(self.image, 1)
+                                        fc = face.Face(self.image, 1)
                                         self.owner+=1
                                         self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
                                     if (self.caller.comboBox.currentText() == "Others"):
-                                        fc = Face(self.image, 0)
+                                        fc = face.Face(self.image, 0)
                                         self.others+=1
                                         self.emit(QtCore.SIGNAL("ownoth"), self.owner, self.others)
                                     if bb is not None:
@@ -508,7 +398,7 @@ def trainLR(Faces):
     ]
 
     # http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-    lr = GridSearchCV(LR(C=1), param_grid, cv=5, n_jobs=2).fit(rep, identities) # n_jobs param is for parallel computation, try differen values
+    lr = GridSearchCV(LR(C=1), param_grid, cv=5, n_jobs=4).fit(rep, identities) # n_jobs param is for parallel computation, try differen values
     return lr
 
 def face_aligned(img, bb, size, landmarks, landmarks_i = openface.AlignDlib.OUTER_EYES_AND_NOSE):
@@ -519,7 +409,6 @@ def face_aligned(img, bb, size, landmarks, landmarks_i = openface.AlignDlib.OUTE
             return alignedFace
 
 if __name__ == '__main__':
-
     app = QtGui.QApplication(sys.argv)
     window = GuiWindow()
     app.exec_()

@@ -55,8 +55,8 @@ To apply changing in the group user needs to log out and log in again.
 Access should be renewed after every reboot.
 
 ### How to protect the model from hacking:
-`give_permissions` and `checkpass` processes comunicates through FIFO file with a specific name. Any user, who creates a FIFO file with the same name in the same directory and writes a username in it, can get access without entering a password. So the name of the FIFO file and the mechanism of comunication through it should be concealed. For this purpose **ABSOLUTELY ALL** files should be closed for reading, writing and execution for **EVERYONE**. `checkpass` should be opened for all users, but only on execution.
+`give_permissions` and `checkpass` processes comunicates through FIFO file with a specific name. Any user, who creates a FIFO file with the same name in the same directory and writes a username in it, can get access without entering a password. So the name of the FIFO file and the mechanism of comunication through it should be concealed. For this purpose **ABSOLUTELY ALL** files should be closed for reading, writing and execution for **EVERYONE**. `checkpass` should be opened for all users, but only for execution.
 
 ### How to use it with EDIPUS:
-The script which anlyses faces should do exactly the same as `checkpass` binary instead of it.
+The script which anlyses faces should do exactly the same as `checkpass` binary. So it should be instead of `checkpass`.
 And 'if' condition should check a face, not a password.

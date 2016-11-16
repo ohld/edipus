@@ -16,7 +16,6 @@ Access to `/home/secret_docs` only for users with 'secret' group.
   
   ```
   mkdir /home/common
-  
   chmod a+wrx /home/common
   ```
 
@@ -28,14 +27,12 @@ Access to `/home/secret_docs` only for users with 'secret' group.
   ```
   
   This script runs automatically on every boot of the system.
-  
-  Fist one resets 'secret' group: delete all users from it.
-
-  Second one starts daemon process on the background of the ststem. This daemon adds users to the group 'secret'
+  the fist line resets 'secret' group: delete all users from it.
+  the second one starts daemon process on the background of the ststem. This daemon adds users to the group 'secret'
 
 1. create a group 'secret':
 
-```
+  ```
   groupadd secret
   ```
 
@@ -43,11 +40,8 @@ Access to `/home/secret_docs` only for users with 'secret' group.
   
   ```
   mkdir /home/secret_docs
-  
   chgrp secret /home/secret_docs
-  
   chmod a-wrx, /home/secret_docs
-  
   chmod ug=wrx /home/secret_docs
   ```
 

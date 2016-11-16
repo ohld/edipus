@@ -2,7 +2,7 @@
 ### (for Linux)
 
 ### What does it do:
-Access to `/home/secret_docs` only with users with 'secret' group.
+Access to `/home/secret_docs` only for users with 'secret' group.
 
 ### How to use it:
 1. open terminal 
@@ -20,8 +20,9 @@ chmod a+wrx /home/common
 /home/reset_secret_group.bash
 /home/give_permissions &
 ```
+This script runs automatically on every boot of the system.
 Fist one resets 'secret' group: delete all users from it.
-Second one starts daemon process automatically on every boot of the system. This daemon adds users to the group 'secret'
+Second one starts daemon process on the background of the ststem. This daemon adds users to the group 'secret'
 5. create a group 'secret':
 ```
 groupadd secret

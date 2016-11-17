@@ -6,12 +6,14 @@ Sources of edipus project
 
 ### main_app.py:
 module with implementations: 
+
 1. GUI windows classes
 
 1. Singnals and Slots of this classes
 
 ### exec_thread.py:
 module with implementations:
+
 1. Main calculation thread
 
 1. Working with neuron network
@@ -20,6 +22,7 @@ module with implementations:
 
 ### vk_requests.py:
 module with implementations:
+
 1. HTTPS requests for VK.com
 
 1. Logging in VK.com

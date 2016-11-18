@@ -1,43 +1,45 @@
 # Edipus
-### (for Linux)
 
-### What is it:
-Sources of edipus project
+## What is it
+Sources of Edipus project.
 
-### main_app.py:
-module with implementations: 
+## Getting started with Edipus
 
-1. GUI windows classes
+To install dependencies, train your personal identificator and validate webcam photo, run
 
-1. Singnals and Slots of this classes
-
-### exec_thread.py:
-module with implementations:
-
-1. Main calculation thread
-
-1. Working with neuron network
-
-1. Working with vk_requests
-
-### vk_requests.py:
-module with implementations:
-
-1. HTTPS requests for VK.com
-
-1. Logging in VK.com
-
-1. Downloading photots from VK.com
-
-### face.py:
-module with implementation of FACE class
-
-### permission_control.py:
-rewrited C module
-
-### How to use it:
   ```
   ./install-deps.sh
-  python2 ./main_app.py
+  ./train.py
+  ./validate.py
   ```
+
+## Files description
+
+### main_app.py:
+
+* GUI windows classes
+
+* Singnals and Slots of this classes
+
+### exec_thread.py:
+
+* Main calculation thread
+
+* Working with neuron network
+
+* Working with vk_requests
+
+### vk_requests.py:
+
+* HTTPS requests for VK.com
+
+* Logging in VK.com
+
+* Downloading photots from VK.com
+
+### face.py:
+module with implementation of FACE class, used for training network.
+
+### permission_control.py:
+rewrited C module from **../permission control** folder.
 

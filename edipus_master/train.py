@@ -1,7 +1,8 @@
+#!/usr/bin/python2
 import os
 import sys
 from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtGui import QImage, QPixmap, QFileDialog
+from PyQt4.QtGui import QPixmap, QFileDialog
 import exec_thread
 
 fileDir = os.path.dirname(os.path.realpath(__file__))

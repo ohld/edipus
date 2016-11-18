@@ -29,12 +29,12 @@ int main(int argc, char **argv) {
 	if (strcmp(argv[1], PASSWORD) == 0) {
 		if (mkfifo(fifo, get_flags()) == -1 && errno != EEXIST) 
 			return error("cannot create fifo");
- 		int fifo_id = open(fifo, O_WRONLY);
+		int fifo_id = open(fifo, O_WRONLY);
 		if (fifo_id == -1) return error("open error");
-        
-        	char *buf = getenv("USER");
-        	int taken = write(fifo_id, (void *) buf, strlen(buf));
-        	if (taken == -1) return error("write error");
+
+        char *buf = getenv("USER");
+        int taken = write(fifo_id, (void *) buf, strlen(buf));
+        if (taken == -1) return error("write error");
 		if (taken > 0) printf("accesshas been granted\n");
 		if (close(fifo_id) == -1) return error("close error");
 	} else 

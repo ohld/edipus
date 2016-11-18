@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression as LR
 import face
-import permission_control
+import pickle
 
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
@@ -51,31 +51,25 @@ class Calculate_thread(QtCore.QThread):
         self.first_flag     = False
         self.logging_next   = False
         self.end_learning   = False
-        self.p_control_flag = False
-        self.c_all = 0
 
         self.learning = 0  # 0 - not learning
                            # 1 - video learning
                            # 2 - photo learning
                            # 3 - social networks
-
+        self.loading_flag = False
         self.owner= 0
         self.others = 0
-        self.iters = 12
+        self.iters = 30
         self.name = ""
         self.my_name = "Owner"
         self.image = None
-        self.c_permision = 0
         self.connect(self.caller.pushButton,               QtCore.SIGNAL("clicked()"), self.start_learning)
         self.connect(self.caller.loggingwidget.pushButton, QtCore.SIGNAL("clicked()"), self.logg_next)
         self.connect(self.caller.pushButton_2,             QtCore.SIGNAL("clicked()"), self.checking)
 
 
     def checking(self):
-        self.c_permision = 0
-        self.c_all = 0
-        self.p_control_flag = True
-        self.emit(QtCore.SIGNAL("p_control"), " Please, look in the camera...", "black")
+        self.loading_flag = True
 
 
     def logg_next(self):
@@ -101,7 +95,6 @@ class Calculate_thread(QtCore.QThread):
             filename = os.path.join(directory, names_pattern)
             s = "Downloading " + str(filename)
             self.emit(QtCore.SIGNAL("loading") , True, 0, s)
-            #print "Downloading %s" % filename
             open(filename, "w").write(urllib2.urlopen(url).read())
 
     def vk_learning(self):
@@ -166,7 +159,7 @@ class Calculate_thread(QtCore.QThread):
                         cv.rectangle(img1, bl, tr, color=(153, 255, 204), thickness=3)
                         for p in openface.AlignDlib.OUTER_EYES_AND_NOSE:
                             cv.circle(img1, center=landmarks1[p], radius=3, color=(255, 100, 50), thickness=-1)
-                        cv.putText(img1, "your friend", (bb.left(), bb.top() - 10), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
+                        cv.putText(img1, "your friend", (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
                         image_out = cvimage2qimage(img1)
                         self.emit(QtCore.SIGNAL("img_signal"), image_out)
             i += 1
@@ -192,7 +185,7 @@ class Calculate_thread(QtCore.QThread):
                         cv.rectangle(img2, bl, tr, color=(153, 255, 204), thickness=3)
                         for p in openface.AlignDlib.OUTER_EYES_AND_NOSE:
                             cv.circle(img2, center=landmarks2[p], radius=3, color=(255, 100, 50), thickness=-1)
-                        cv.putText(img2, self.my_name, (bb.left(), bb.top() - 10), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
+                        cv.putText(img2, self.my_name, (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
                         image_out = cvimage2qimage(img2)
                         self.emit(QtCore.SIGNAL("img_signal"), image_out)
             i += 1
@@ -229,19 +222,14 @@ class Calculate_thread(QtCore.QThread):
                         id = 0
 
                     self.emit(QtCore.SIGNAL("probabil"), id)
-                    if (self.p_control_flag is True):
-                        self.c_all += 1
-                        if (id > 0.8):
-                            self.c_permision += 1
-                        if self.c_all is 20:
-                            if self.c_permision >= 10:
-                                self.emit(QtCore.SIGNAL("p_control"), " ACCESS  PROVIDED ", "green")
-                                permission_control.permission_control(True)
-                            else:
-                                self.emit(QtCore.SIGNAL("p_control"), " ACCESS  DENIDED ", "red")
-                            self.p_control_flag = False
-
-
+                if self.loading_flag is True:
+                    if os.path.exists(os.path.join(fileDir,"classifier.pkl")):
+                        os.remove(os.path.join(fileDir,"classifier.pkl"))
+                    fname = os.path.join(fileDir, "classifier.pkl")
+                    with open(fname, 'w') as f:
+                        pickle.dump(self.lr, f)
+                        self.emit(QtCore.SIGNAL("p_control"), " NETWORK HAS BEEN SAVED ", "black")
+                        self.loading_flag = False
                                                   # now id -> probability of id == 1.
                                                   # ^ - prob of 1. If there was 0, that would be prob of 0
                                                   # http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
@@ -256,7 +244,7 @@ class Calculate_thread(QtCore.QThread):
                     cv.rectangle(img, bl, tr, color=(153, 255, 204), thickness=3)
                     for p in openface.AlignDlib.OUTER_EYES_AND_NOSE:
                         cv.circle(img, center=landmaks_a[p], radius=3, color=(255, 100, 50), thickness=-1)
-                    cv.putText(img, self.name, (bb.left(), bb.top() - 10), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
+                    cv.putText(img, self.name, (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
 
             if (self.learning == 1):
                 if(i < self.iters):
@@ -305,7 +293,7 @@ class Calculate_thread(QtCore.QThread):
                                         for p in openface.AlignDlib.OUTER_EYES_AND_NOSE:
                                             cv.circle(img_l, center=landmaks_a[p], radius=3, color=(255, 100, 50),
                                                       thickness=-1)
-                                        cv.putText(img_l, "Others", (bb.left(), bb.top() - 10), cv.FONT_HERSHEY_SIMPLEX,
+                                        cv.putText(img_l, "Others", (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX,
                                                    fontScale=0.75, color=(153, 255, 204), thickness=2)
 
                                     image_out = cvimage2qimage(img_l)

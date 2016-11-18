@@ -33,6 +33,7 @@ int main() {
         	int taken = 0;
 		memset((void *) buf, 0, MES_SIZE);
 		taken  = read(fifo_id, (void *) buf, MES_SIZE);
+		printf("%d\n", taken);
 		if (taken > 0) {
 			snprintf(command, 1000, "usermod -a -G secret %s", buf);
 			system(command);

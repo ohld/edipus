@@ -1,5 +1,5 @@
 *.pyc
 *~
-edipus_master/me/
-edupus_mater/notme/
-.idea/
+edipus_master/me/*
+edupus_mater/notme/*
+.idea/*

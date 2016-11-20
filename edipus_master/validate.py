@@ -60,7 +60,7 @@ class Calculate_thread(QtCore.QThread):
                 if bb is not None:
                     landmaks_a = exec_thread.align.findLandmarks(img, bb)
                     if landmaks_a is not None:
-                        self.image = exec_thread.face_aligned(img, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=exec_thread.openface.AlignDlib.OUTER_EYES_AND_NOSE)
+                        self.image = exec_thread.face_aligned(img, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=exec_thread.aligning.AlignDlib.OUTER_EYES_AND_NOSE)
 
             id = 0
             if (self.image is not None):

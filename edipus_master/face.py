@@ -1,5 +1,3 @@
-
-
 class Face:
     def __init__(self, cv_img, identity):
         self.cv_img = cv_img

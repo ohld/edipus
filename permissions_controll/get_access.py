@@ -1,11 +1,8 @@
 #!/usr/bin/python2
+from access_data import wr_fifo, rd_fifo, SECRET_GROUP
 import os
 from time import sleep
 from sys import exit, argv
-
-wr_fifo = '/home/common/edipusisthebest1120161'
-rd_fifo = '/home/common/edipusisthebest1120162'
-SECRET_GROUP = 'secret'
 
 DIRECTORY = '/home/secret_docs'
 PASSWORD = 'edipus'

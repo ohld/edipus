@@ -1,22 +1,19 @@
 #!/usr/bin/python2
+from access_data import wr_fifo, rd_fifo, SECRET_GROUP
 import os
 from time import sleep
 from sys import exit
-
-rd_fifo = '/home/common/edipusisthebest1120161'
-wr_fifo = '/home/common/edipusisthebest1120162'
-SECRET_GROUP = 'secret'
 
 MES_SIZE = 100
 
 while True:
 	try:
-		rd_fifo_id = os.open(rd_fifo, os.O_RDONLY)
+		rd_fifo_id = os.open(wr_fifo, os.O_RDONLY)
 	except OSError:
 		sleep(1) 
 		continue
 
-	wr_fifo_id = os.open(wr_fifo, os.O_WRONLY)
+	wr_fifo_id = os.open(rd_fifo, os.O_WRONLY)
 	os.unlink(rd_fifo)
 	os.unlink(wr_fifo)
         

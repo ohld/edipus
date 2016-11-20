@@ -1,42 +1,42 @@
-# Permissions' controll model
-### (for Linux)
+# Модель контроля доступа
+### (для Linux)
 
-### What does it do:
-Access to `/home/secret_docs` only for users with 'secret' group.
+### Зачем это:
+Доступ в директорию `/home/secret_docs` только для пользователей в группе 'secret'.
 
-### How to use it:
-1. open terminal 
-1. switch to a root user:
+### Как это использовать:
+1. Откройте терминал 
+1. Переключитесь на пользователя-администратора (в Linux он называется 'root'):
   
   ```
   sudo su root
   ```
 
-1. create `/home/common/` directory and give it all permissions:
+1. Создайте директорию `/home/common/` со всеми разрешениями для всех (это будет директорией в системе, в которой смогут работать все пользователи):
   
   ```
   mkdir /home/common
   chmod a+wrx /home/common
   ```
 
-1. add 2 strings to `/etc/rc.local` file:
+1. Добавьте две строки в файл `/etc/rc.local` (укажите свои пути к этим двум скриптам):
   
   ```
   /home/reset_secret_group.bash
   /home/give_permissions &
   ```
   
-  This script runs automatically on every boot of the system.
-  the fist line resets 'secret' group: delete all users from it.
-  the second one starts daemon process on the background of the ststem. This daemon adds users to the group 'secret'
-
-1. create a group 'secret':
+  rc.local - это скрипт, который исполняется при каждой перезагрузке системы.
+  Первая строка удаляет всех пользователей из группы 'secter', так что после этого доступ нужно запрашивать заново.
+  Вторая сторка запускает процесс-демон на фоне системы. Этот процесс имеет права на добавление пользователей в группы. Он будет принимать запросы на получение доступа и добавлять пользователей в группу 'secret'.
+  
+1. Создайте саму группу 'secret':
 
   ```
   groupadd secret
   ```
 
-1. create secret directory under 'secret' group and restrinc access to it:
+1. Создайте секретную директорию в группе 'secret' и закройте публичный боступ в неё (для этой директории пользователи будут запрашивать доступ):
   
   ```
   mkdir /home/secret_docs
@@ -45,18 +45,16 @@ Access to `/home/secret_docs` only for users with 'secret' group.
   chmod ug=wrx /home/secret_docs
   ```
 
-Now any user will be able to get into `/home/secret_docs` directory only after running `checkpass` binary with a right password.
-Password is 'edipus':
+Теперь любой пользователь (не администратор) сможет работать с файлами в директории `/home/secret_docs` только после того, как запустят исполняемый файл `checkpass`, передав ему как аргумент правильный пароль.
+Пароль - edipus:
 ```
 bin/checkpass edipus
 access has been granted
 ```
-To apply changing in the group user needs to log out and log in again.
-Access should be renewed after every reboot.
+Для применения изменений в группах пользователю нужно перезайти в систему (зоздать новую рабочую сессию, в которой будут загружены уже обновлённые группы).
 
-### How to protect the model from hacking:
-`give_permissions` and `checkpass` processes comunicates through FIFO file with a specific name. Any user, who creates a FIFO file with the same name in the same directory and writes a username in it, can get access without entering a password. So the name of the FIFO file and the mechanism of comunication through it should be concealed. For this purpose **ABSOLUTELY ALL** files should be closed for reading, writing and execution for **EVERYONE**. `checkpass` should be opened for all users, but only for execution.
+### Как защитить модель от взлома:
+Процессы `give_permissions` и `checkpass` обмениваются данными через специальный файл FIFO (FIrst In First Out) со специальным именем (второй отправляет первому запрос на добавление пользователя в группу 'secret'). Любой пользователь, создавший FIFO файл с таким же именем и записавший в него своё имя (username), получит доступ к секретным файлам без ввода пароля или распознаваня лица. Это значит, что имя этого FIFO файла и механизм передачи информации через него должны быть скрыты. Для этого **АБСОЛЮТНО ВСЕ** файлы проекта должны быть закрыты (с помощью BASH-команды chmod) на запись, чтение и исполнение для **ВСЕХ**. Программы `checkpass` и `validate.py` (распознающая лица) должны быть доступны для любого пользователя, но только для исполнения.
 
-### How to use it with EDIPUS:
-The script which anlyses faces should do exactly the same as `checkpass` binary. So it should be instead of `checkpass`.
-And 'if' condition should check a face, not a password.
+### Как искользовать эту систему с EDIPUS:
+Программа, распознающая лица (`validate.py`), делает то же самое, что и `checkpass`. Только вместо пароля у неё распознавание. Программа `checkpass` в данном случае написана для простой демонстрации и быстрой проверки работы процесса-демона `give_permissions`.

@@ -8,7 +8,7 @@ sudo apt-get install -y libprotobuf-dev libleveldb-dev libsnappy-dev\
   libgoogle-glog-dev liblmdb-dev protobuf-compiler libboost-all-dev\
   libatlas-dev libatlas-base-dev liblapack-dev libblas-dev\
   python-pip python-numpy python-imaging python-opencv\
-  git wget cmake gfortran
+  git wget cmake gfortran sublime-text
 
 sudo pip install --upgrade pip
 sudo pip install -I scipy==0.13.3

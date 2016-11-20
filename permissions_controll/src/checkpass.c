@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 const char *fifo1 = "/home/common/edipusisthebest1120161";
-const char *fifo2 = "/home/common/edibusisthebest1120162";
+const char *fifo2 = "/home/common/edipusisthebest1120162";
 const char *PASSWORD = "edipus";
 
 int error(char *mes) {

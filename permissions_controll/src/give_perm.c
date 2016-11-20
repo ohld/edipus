@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 const char *fifo1 = "/home/common/edipusisthebest1120161";
-const char *fifo2 = "/home/common/edibusisthebest1120162";
+const char *fifo2 = "/home/common/edipusisthebest1120162";
 const int MES_SIZE = 100;
 
 int error(char *mes) {
@@ -26,6 +26,7 @@ int main() {
 			continue;
 		}
 		int fifo2_id = open(fifo2, O_WRONLY);
+		printf("%d\n", errno);
 		if (fifo2_id == -1) return error("open error");
         	
 		if (unlink(fifo1) == -1) return error("unlink error");
@@ -41,7 +42,7 @@ int main() {
 		if (write(fifo2_id, (void *) buf, 1) != 1)
 			return error("write error");
 		if (read(fifo1_id, (void *) buf, 1) == 1) {
-			system("/home/edipus/permissions_controll/reset_secret_group.bash");
+			system("../reset_secret_group.bash");
 		} else return error("read error");
 	
         	if (close(fifo1_id) == -1) return error("close error");

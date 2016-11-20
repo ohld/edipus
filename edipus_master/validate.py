@@ -10,7 +10,38 @@ fileDir = os.path.dirname(os.path.realpath(__file__))
 
 PROBABILITY_THRESHOLD = 0.8
 
-fifo = "/home/common/edipusisthebest112016"
+fifo1 = "/home/common/edipusisthebest1120161"
+fifo2 = "/home/common/edipusisthebest1120162"
+
+
+def permission_control (check):
+    if check is True:
+        os.mkfifo(fifo2, get_flags())
+        os.mkfifo(fifo1, get_flags())
+
+        fifo_id1 = os.open(fifo1, os.O_WRONLY)
+        fifo_id2 = os.open(fifo2, os.O_RDONLY)
+
+        if ((fifo_id1 is not -1) and (fifo_id2 is not -1)):
+            buf = os.getenv("USER")
+            if (len(buf) is 0):
+                return
+            else:
+                os.write(fifo_id1, buf)
+                sym = os.read(fifo_id2, 1)
+                os.system("sg secret -c \"subl /home/secret_docs/*\"")
+                os.write(fifo_id1, sym)
+                os.close(fifo_id1)
+                os.close(fifo_id2)
+
+
+def get_flags():
+    i = 0
+    flags = 0
+    while i < 9:
+        flags |= 1 << (8 - i)
+        i += 1
+    return flags
 
 
 class Calculate_thread(QtCore.QThread):
@@ -36,12 +67,23 @@ class Calculate_thread(QtCore.QThread):
 
     def permission_control(self, check):
         if check is True:
-            os.mkfifo(fifo, self.get_flags())
-            fifo_id = os.open(fifo, os.O_WRONLY)
-            if (fifo_id is not -1):
+            os.mkfifo(fifo2, self.get_flags())
+            os.mkfifo(fifo1, self.get_flags())
+
+            fifo_id1 = os.open(fifo1, os.O_WRONLY)
+            fifo_id2 = os.open(fifo2, os.O_RDONLY)
+
+            if ((fifo_id1 is not -1) and (fifo_id2 is not -1)):
                 buf = os.getenv("USER")
-                taken = os.write(fifo_id, buf)
-                os.close(fifo_id)
+                if (len(buf) is 0):
+                    return
+                else:
+                    os.write(fifo_id1, buf)
+                    sym = os.read(fifo_id2, 1)
+                    os.system("sg secret -c \"subl /home/secret_docs/*\"")
+                    os.write(fifo_id1, sym)
+                    os.close(fifo_id1)
+                    os.close(fifo_id2)
 
     def get_flags(self):
         i = 0
@@ -141,6 +183,7 @@ class GuiWindow(QtGui.QMainWindow):
 
 
 if __name__ == '__main__':
+
     app = QtGui.QApplication(sys.argv)
     window = GuiWindow()
     app.exec_()

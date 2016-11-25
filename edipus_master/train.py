@@ -2,10 +2,11 @@
 import os
 import sys
 from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtGui import QPixmap, QFileDialog
+from PyQt4.QtGui import QPixmap, QFileDialog, QMessageBox
 import exec_thread
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
+
 
 
 class  LoadingWidget(QtGui.QWidget):
@@ -83,6 +84,13 @@ class GuiWindow(QtGui.QMainWindow):
     def close_p_c(self):
         self.permissionwidget.hide()
 
+
+    def error(self, message):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText(message)
+        msg.exec_()
+
     def calc_thread_run(self):
         self.mythread = exec_thread.Calculate_thread(caller=self)
         self.mythread.start()
@@ -94,6 +102,7 @@ class GuiWindow(QtGui.QMainWindow):
         self.connect(self.mythread,                    QtCore.SIGNAL("ownoth"),      self.OwnerOthers)
         self.connect(self.mythread,                    QtCore.SIGNAL("p_control"),   self.permission_control)
         self.connect(self.permissionwidget.pushButton, QtCore.SIGNAL(("clicked()")), self.close_p_c)
+        self.connect(self.mythread,                    QtCore.SIGNAL("error"),       self.error)
 
     def loading(self,start, var = 100, s = ""):
         self.loadingwidget.label.setText(str(s))

@@ -1,5 +1,6 @@
 from PyQt4 import QtCore
 from PyQt4.QtGui import QImage
+from PyQt4.QtGui import QMessageBox
 import vk_requests
 import os
 import random
@@ -206,6 +207,11 @@ class Calculate_thread(QtCore.QThread):
                 self.end_learning = False
 
             ok,img = cap.read()
+            if ok is not True:
+                msg  = "video device is busy"
+                self.emit(QtCore.SIGNAL("error"), msg)
+                break
+
             if img != None:
                 bb = align.getLargestFaceBoundingBox(img, skipMulti = True)
                 if bb is not None:

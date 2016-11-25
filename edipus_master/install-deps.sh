@@ -26,3 +26,7 @@ sudo pip install -I autobahn==0.10.4
 sudo pip install -I imagehash==1.0
 sudo pip install -I twisted==15.2.1
 sudo pip install -I protobuf==2.6
+sudo git clone https://github.com/torch/distro.git ~/torch --recursive
+sudo cd ~/torch; bash install-deps;
+sudo ./install.sh
+

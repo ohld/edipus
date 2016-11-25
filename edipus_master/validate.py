@@ -8,6 +8,8 @@ import cv2 as cv
 import exec_thread
 fileDir = os.path.dirname(os.path.realpath(__file__))
 
+os.system("export PATH=/home/ivan/torch/install/bin:$PATH")
+
 PROBABILITY_THRESHOLD = 0.8
 
 fifo1 = "/home/common/edipusisthebest1120161"
@@ -138,12 +140,14 @@ class PermissionWidget(QtGui.QWidget):
         super(PermissionWidget, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/permission.ui"), self)
         self.setGeometry(500, 800, 400, 114)
+        self.setWindowTitle("Permission")
 
 
 class GuiWindow(QtGui.QMainWindow):
     def __init__(self):
         super(GuiWindow, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/classif.ui"), self)
+        self.setWindowTitle("Edipus validator")
         self.permissionwidget = PermissionWidget()
         self.calc_thread_run()
         self.show()

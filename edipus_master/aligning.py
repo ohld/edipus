@@ -52,19 +52,17 @@ class AlignDlib:
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(facePredictor)
 
-    def getAllFaceBoundingBoxes(self, rgbImg):
+    def getAllFaceBoundingBoxes(self, rgbImg, scaling = 0):
         assert rgbImg is not None
-
         try:
-            return self.detector(rgbImg, 0)
+            return self.detector(rgbImg, scaling)
         except Exception as e:
             print("Warning: {}".format(e))
             return []
 
-    def getLargestFaceBoundingBox(self, rgbImg, skipMulti=False):
+    def getLargestFaceBoundingBox(self, rgbImg, skipMulti=False, scaling = 0):
         assert rgbImg is not None
-
-        faces = self.getAllFaceBoundingBoxes(rgbImg)
+        faces = self.getAllFaceBoundingBoxes(rgbImg, scaling)
         if (not skipMulti and len(faces) > 0) or len(faces) == 1:
             return max(faces, key=lambda rect: rect.width() * rect.height())
         else:
@@ -79,14 +77,13 @@ class AlignDlib:
 
     def align(self, imgDim, rgbImg, bb=None,
               landmarks=None, landmarkIndices=INNER_EYES_AND_BOTTOM_LIP,
-              skipMulti=False):
-
+              skipMulti=False, scaling = 0):
         assert imgDim is not None
         assert rgbImg is not None
         assert landmarkIndices is not None
 
         if bb is None:
-            bb = self.getLargestFaceBoundingBox(rgbImg, skipMulti)
+            bb = self.getLargestFaceBoundingBox(rgbImg, skipMulti, scaling)
             if bb is None:
                 return
 

@@ -7,6 +7,12 @@ import exec_thread
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
 
+class SettingsWidget(QtGui.QWidget):
+    def __init__(self):
+        super (SettingsWidget, self).__init__()
+        uic.loadUi(os.path.join(fileDir, "ui_forms/settings.ui"), self)
+        self.setGeometry(500, 400, 400, 350)
+        self.setWindowTitle("Settings")
 
 
 class  LoadingWidget(QtGui.QWidget):
@@ -14,27 +20,33 @@ class  LoadingWidget(QtGui.QWidget):
         super(LoadingWidget, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/loading.ui"), self)
         self.setGeometry(500,800, 565, 113)
+        self.setWindowTitle("Loading")
 
 class PermissionWidget(QtGui.QWidget):
     def __init__(self):
         super(PermissionWidget, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/permission.ui"), self)
         self.setGeometry(500, 800, 400, 114)
-
+        self.setWindowTitle("Permission")
 
 class  LoggingForm(QtGui.QWidget):
     def __init__(self):
         super(LoggingForm, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/log_form.ui"), self)
         self.setGeometry(500,800, 401, 170)
+        self.lineEdit.setText("84920305")
+        self.lineEdit_2.setText("12")
+        self.setWindowTitle("Logging")
 
 class GuiWindow(QtGui.QMainWindow):
     def __init__(self):
         super(GuiWindow, self).__init__()
         uic.loadUi(os.path.join(fileDir, "ui_forms/mwinvk.ui"), self)
+        self.setWindowTitle("Edipus trainer")
         self.loadingwidget    = LoadingWidget()
         self.loggingwidget    = LoggingForm()
         self.permissionwidget = PermissionWidget()
+        self.settingswigdet   = SettingsWidget()
 
         self.radioButton.setChecked(True)
         self.radioButton_2.setChecked(False)
@@ -68,6 +80,7 @@ class GuiWindow(QtGui.QMainWindow):
     def radioB3toggled(self):
         self.lineEdit_2.setEnabled(False)
         self.toolButton.setEnabled(False)
+        self.comboBox.setEnabled(False)
 
     def radioB2toggled(self):
         self.lineEdit_2.setEnabled(True)
@@ -78,7 +91,7 @@ class GuiWindow(QtGui.QMainWindow):
         self.toolButton.setEnabled(False)
 
     def opendialog(self):
-        tmp_str = QFileDialog.getExistingDirectory(self,"open dialog", "/home/ivan/PycharmProjects")
+        tmp_str = QFileDialog.getExistingDirectory(self,"open dialog", "/home/ivan/PycharmProjects/edipus/")
         self.lineEdit_2.setText(tmp_str)
 
     def close_p_c(self):
@@ -90,6 +103,12 @@ class GuiWindow(QtGui.QMainWindow):
         msg.setIcon(QMessageBox.Critical)
         msg.setText(message)
         msg.exec_()
+
+    def opensettings(self):
+        self.settingswigdet.show()
+
+    def close_sett(self):
+        self.settingswigdet.hide()
 
     def calc_thread_run(self):
         self.mythread = exec_thread.Calculate_thread(caller=self)
@@ -103,6 +122,8 @@ class GuiWindow(QtGui.QMainWindow):
         self.connect(self.mythread,                    QtCore.SIGNAL("p_control"),   self.permission_control)
         self.connect(self.permissionwidget.pushButton, QtCore.SIGNAL(("clicked()")), self.close_p_c)
         self.connect(self.mythread,                    QtCore.SIGNAL("error"),       self.error)
+        self.connect(self.toolButton_2,                QtCore.SIGNAL("clicked()"),   self.opensettings)
+        self.connect(self.settingswigdet.pushButton,   QtCore.SIGNAL(("clicked()")), self.close_sett)
 
     def loading(self,start, var = 100, s = ""):
         self.loadingwidget.label.setText(str(s))
@@ -126,6 +147,7 @@ class GuiWindow(QtGui.QMainWindow):
         self.label_2.setText(str(prob))
 
 if __name__ == '__main__':
+    os.system("export PATH=/home/ivan/torch/install/bin:$PATH")
     app = QtGui.QApplication(sys.argv)
     window = GuiWindow()
     app.exec_()

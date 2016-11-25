@@ -44,9 +44,12 @@ class Calculate_thread(QtCore.QThread):
     def __init__(self, parent = None, caller = None):
         QtCore.QThread.__init__(self, parent)
         self.caller = caller
+        self.probth = 0.8
         self.Faces = []
         self.lr = None
+        self.scaling = 0
         self.aligned_size = 96
+        self.landmarks_type = aligning.AlignDlib.OUTER_EYES_AND_NOSE
 
         #flags
         self.first_flag     = False
@@ -67,7 +70,20 @@ class Calculate_thread(QtCore.QThread):
         self.connect(self.caller.pushButton,               QtCore.SIGNAL("clicked()"), self.start_learning)
         self.connect(self.caller.loggingwidget.pushButton, QtCore.SIGNAL("clicked()"), self.logg_next)
         self.connect(self.caller.pushButton_2,             QtCore.SIGNAL("clicked()"), self.checking)
+        self.connect(self.caller.settingswigdet.pushButton,QtCore.SIGNAL("clicked()"), self.load_settings)
 
+    def load_settings(self):
+        self.probth = float(self.caller.settingswigdet.lineEdit.text())
+        self.aligned_size = int(self.caller.settingswigdet.lineEdit_2.text())
+        self.iters = int(self.caller.settingswigdet.lineEdit_3.text())
+        self.scaling = int(self.caller.settingswigdet.spinBox.value())
+        self.set_landmarks(self.caller.settingswigdet.comboBox.currentText())
+
+    def set_landmarks(self, landmarks_type):
+        if landmarks_type == "outer eyes and nose":
+            self.landmarks_type = aligning.AlignDlib.OUTER_EYES_AND_NOSE
+        if landmarks_type == "inner eyes and bottom lip":
+            self.landmarks_type = aligning.AlignDlib.INNER_EYES_AND_BOTTOM_LIP
 
     def checking(self):
         self.loading_flag = True
@@ -145,11 +161,11 @@ class Calculate_thread(QtCore.QThread):
         for file1 in file_list1:
             img1 = cv.imread(os.path.join(os.path.join(fileDir, IMG_FOLDER_NOTME), file1))
             if img1 is not None:
-                bb = align.getLargestFaceBoundingBox(img1, skipMulti=True)
+                bb = align.getLargestFaceBoundingBox(img1, skipMulti=True, scaling=self.scaling)
                 if bb is not None:
                     landmarks1 = align.findLandmarks(img1, bb)
                     self.image = face_aligned(img1, bb, self.aligned_size, landmarks=landmarks1,
-                                              landmarks_i=aligning.AlignDlib.OUTER_EYES_AND_NOSE)
+                                              landmarks_i=self.landmarks_type, scaling=self.scaling)
                     if self.image is not None:
                         fc = face.Face(self.image, 0)
                         self.Faces.append(fc)
@@ -158,7 +174,7 @@ class Calculate_thread(QtCore.QThread):
                         bl = (bb.left(), bb.bottom())
                         tr = (bb.right(), bb.top())
                         cv.rectangle(img1, bl, tr, color=(153, 255, 204), thickness=3)
-                        for p in aligning.AlignDlib.OUTER_EYES_AND_NOSE:
+                        for p in self.landmarks_type:
                             cv.circle(img1, center=landmarks1[p], radius=3, color=(255, 100, 50), thickness=-1)
                         cv.putText(img1, "your friend", (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
                         image_out = cvimage2qimage(img1)
@@ -171,11 +187,11 @@ class Calculate_thread(QtCore.QThread):
         for file2 in file_list2:
             img2 = cv.imread(os.path.join(os.path.join(fileDir, IMG_FOLDER_ME), file2))
             if img2 is not None:
-                bb = align.getLargestFaceBoundingBox(img2, skipMulti=True)
+                bb = align.getLargestFaceBoundingBox(img2, skipMulti=True,scaling=self.scaling)
                 if bb is not None:
                     landmarks2 = align.findLandmarks(img2, bb)
                     self.image = face_aligned(img2, bb, self.aligned_size, landmarks=landmarks2,
-                                              landmarks_i=aligning.AlignDlib.OUTER_EYES_AND_NOSE)
+                                              landmarks_i=self.landmarks_type, scaling=self.scaling)
                     if self.image is not None:
                         fc = face.Face(self.image, 1)
                         self.owner += 1
@@ -184,7 +200,7 @@ class Calculate_thread(QtCore.QThread):
                         bl = (bb.left(), bb.bottom())
                         tr = (bb.right(), bb.top())
                         cv.rectangle(img2, bl, tr, color=(153, 255, 204), thickness=3)
-                        for p in aligning.AlignDlib.OUTER_EYES_AND_NOSE:
+                        for p in self.landmarks_type:
                             cv.circle(img2, center=landmarks2[p], radius=3, color=(255, 100, 50), thickness=-1)
                         cv.putText(img2, self.my_name, (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
                         image_out = cvimage2qimage(img2)
@@ -213,11 +229,11 @@ class Calculate_thread(QtCore.QThread):
                 break
 
             if img != None:
-                bb = align.getLargestFaceBoundingBox(img, skipMulti = True)
+                bb = align.getLargestFaceBoundingBox(img, skipMulti = True,scaling=self.scaling)
                 if bb is not None:
                     landmaks_a = align.findLandmarks(img, bb)
                     if landmaks_a is not None:
-                        self.image = face_aligned(img, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=aligning.AlignDlib.OUTER_EYES_AND_NOSE)
+                        self.image = face_aligned(img, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=self.landmarks_type, scaling=self.scaling)
             id = 0
             if (self.learning == 0):
                 if (self.image is not None):
@@ -239,7 +255,7 @@ class Calculate_thread(QtCore.QThread):
                                                   # now id -> probability of id == 1.
                                                   # ^ - prob of 1. If there was 0, that would be prob of 0
                                                   # http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-                if (id > PROBABILITY_THRESHOLD):
+                if (id > self.probth):
                     self.name = self.my_name
                 else:
                     self.name = "Others"
@@ -248,7 +264,7 @@ class Calculate_thread(QtCore.QThread):
                     bl = (bb.left(), bb.bottom())
                     tr = (bb.right(), bb.top())
                     cv.rectangle(img, bl, tr, color=(153, 255, 204), thickness=3)
-                    for p in aligning.AlignDlib.OUTER_EYES_AND_NOSE:
+                    for p in self.landmarks_type:
                         cv.circle(img, center=landmaks_a[p], radius=3, color=(255, 100, 50), thickness=-1)
                     cv.putText(img, self.name, (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX, fontScale=0.75, color=(152, 255, 204), thickness=2)
 
@@ -278,11 +294,11 @@ class Calculate_thread(QtCore.QThread):
                 for filem in file_list:
                     img_l = cv.imread(os.path.join(str(self.caller.lineEdit_2.text()),filem))
                     if img_l is not None:
-                        bb = align.getLargestFaceBoundingBox(img_l, skipMulti=True)
+                        bb = align.getLargestFaceBoundingBox(img_l, skipMulti=True,scaling=self.scaling)
                         if bb is not None:
                             landmaks_a = align.findLandmarks(img_l, bb)
                             if landmaks_a is not None:
-                                self.image = face_aligned(img_l, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=aligning.AlignDlib.OUTER_EYES_AND_NOSE)
+                                self.image = face_aligned(img_l, bb, self.aligned_size, landmarks=landmaks_a, landmarks_i=self.landmarks_type, scaling=self.scaling)
                                 if self.image is not None:
                                     if (self.caller.comboBox.currentText() == "Owner"):
                                         fc = face.Face(self.image, 1)
@@ -296,7 +312,7 @@ class Calculate_thread(QtCore.QThread):
                                         bl = (bb.left(), bb.bottom())
                                         tr = (bb.right(), bb.top())
                                         cv.rectangle(img_l, bl, tr, color=(153, 255, 204), thickness=3)
-                                        for p in aligning.AlignDlib.OUTER_EYES_AND_NOSE:
+                                        for p in self.landmarks_type:
                                             cv.circle(img_l, center=landmaks_a[p], radius=3, color=(255, 100, 50),
                                                       thickness=-1)
                                         cv.putText(img_l, "Others", (bb.left(), bb.bottom() + 20), cv.FONT_HERSHEY_SIMPLEX,
@@ -339,9 +355,9 @@ def trainLR(Faces):
     lr = GridSearchCV(LR(C=1), param_grid, cv=5, n_jobs=4).fit(rep, identities) # n_jobs param is for parallel computation, try differen values
     return lr
 
-def face_aligned(img, bb, size, landmarks, landmarks_i = aligning.AlignDlib.OUTER_EYES_AND_NOSE):
+def face_aligned(img, bb, size, landmarks, landmarks_i = aligning.AlignDlib.OUTER_EYES_AND_NOSE, scaling = 0):
     if ((img is not None) and (bb is not None)):
         rgbFrame = img
-        alignedFace = align.align(size, rgbFrame, bb=bb, landmarks = landmarks, landmarkIndices=landmarks_i)
+        alignedFace = align.align(size, rgbFrame, bb=bb, landmarks = landmarks, landmarkIndices=landmarks_i, scaling = scaling)
         if alignedFace is not None:
             return alignedFace
